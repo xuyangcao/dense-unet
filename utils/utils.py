@@ -73,3 +73,51 @@ def linear_rampup(current, rampup_length):
         w = 0.99
 
     return w
+
+def get_metrics(pred, gt, voxelspacing=(0.21, 0.21)):
+    r""" 
+    Get statistic metrics of segmentation
+
+    These metrics include: Dice, Jaccard, Hausdorff Distance, 95% Hausdorff Distance, 
+    , Pixel Wise Accuracy, Precision and Recall.
+
+    If the prediction result is 0s, we set hd, hd95, 10.0 to avoid errors.
+
+    Parameters:
+    -----------
+
+        pred: 2D numpy ndarray
+            binary prediction results 
+
+        gt: 2D numpy ndarray
+            binary ground truth
+
+        voxelspacing: tuple of 2 floats. default: (0.21, 0.21)
+            voxel space of 2D image
+
+    Returns:
+    --------
+
+        metrics: dict of 7 metrics 
+            dict{dsc, jc, hd, hd95, precision, recall, acc}
+
+    """
+
+    dsc = metric.binary.dc(pred, gt)
+    jc = metric.binary.jc(pred, gt)
+    precision = metric.binary.precision(pred, gt)
+    recall = metric.binary.recall(pred, gt)
+
+    acc = (pred == gt).sum() / len(gt.flatten())
+
+    if np.sum(pred) == 0:
+        #print('=> prediction is 0s! ')
+        hd = 10 
+        hd95 = 10
+    else:
+        hd = metric.binary.hd(pred, gt, voxelspacing=voxelspacing)
+        hd95 = metric.binary.hd95(pred, gt, voxelspacing=voxelspacing)
+
+    metrics = {'dsc': dsc, 'jc': jc, 'hd': hd, 'hd95': hd95, 
+                'precision':precision, 'recall':recall, 'acc':acc} 
+    return metrics 
