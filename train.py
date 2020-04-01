@@ -206,7 +206,7 @@ def main():
             is_best = False
             if dice > best_pre:
                 is_best = True
-                best_prec1 = dice
+                best_pre = dice
 
             if is_best or epoch % 10 == 0:
                 save_checkpoint({'epoch': epoch,
