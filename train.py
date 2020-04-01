@@ -1,5 +1,5 @@
 import os 
-os.environ["CUDA_VISIBLE_DEVICES"] = '2,3'
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
 import cv2
 import sys
 import tqdm
@@ -41,7 +41,7 @@ def get_args():
     parser.add_argument('--seed', default=6, type=int) 
 
     parser.add_argument('--start-epoch', default=1, type=int, metavar='N')
-    parser.add_argument('--n_epochs', type=int, default=100)
+    parser.add_argument('--n_epochs', type=int, default=60)
 
     parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float, metavar='W')
     parser.add_argument('--drop_rate', default=0.3, type=float)
@@ -57,7 +57,7 @@ def get_args():
     # frequently change args
     parser.add_argument('--log_dir', default='./log/super')
     parser.add_argument('--save', default='./work/super/test')
-    parser.add_argument('--num', '-L', default='100', type=str, choices=('100', '300', '885', '1770', '4428'))
+    parser.add_argument('--num', '-L', default='885', type=str, choices=('100', '300', '885', '1770', '4428'))
 
     args = parser.parse_args()
     return args
@@ -258,6 +258,8 @@ def train(args, epoch, model, train_loader, optimizer, loss_fn, writer):
             if batch_idx % 10 == 0:
                 # 1. show gt and prediction
                 data = (data * 0.5 + 0.5)
+                #print('data.max()', data.max())
+                #print('data.min()', data.min())
                 img = make_grid(data, nrow=nrow, padding=padding).cpu().detach().numpy().transpose(1, 2, 0)[:, :, 0]
                 img = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR) * 255
                 img = img.astype(np.uint8)

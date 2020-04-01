@@ -108,7 +108,7 @@ class ToTensor(object):
     def __call__(self, sample):
         if self.mode == 'train' or self.mode == 'val' or self.mode == 'test':
             image, target = sample['image'], sample['target']
-            image = image.astype(np.float32)
+            #image = image.astype(np.float32)
             image = torch.from_numpy(image)
             target = np.expand_dims(target, 0)
             target = target.astype(np.float32)
