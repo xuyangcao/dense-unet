@@ -1,5 +1,5 @@
 import os 
-os.environ["CUDA_VISIBLE_DEVICES"] = '3' 
+os.environ["CUDA_VISIBLE_DEVICES"] = '2' 
 import tqdm
 import shutil 
 import argparse
@@ -86,16 +86,26 @@ def main():
             else:
                 save_path = os.path.join(os.path.dirname(args.resume), file_name)
                 csv_path = os.path.dirname(args.resume)
-            args.save_path = save_path
+            setproctitle.setproctitle(save_path)
+
+            if args.save_image:
+                # image path
+                args.save_image_path = save_path + '/image' 
+                if os.path.exists(args.save_image_path):
+                    shutil.rmtree(args.save_image_path)
+                os.makedirs(args.save_image_path, exist_ok=True)
+                # label path
+                args.save_label_path = save_path + '/label' 
+                if os.path.exists(args.save_label_path):
+                    shutil.rmtree(args.save_label_path)
+                os.makedirs(args.save_label_path, exist_ok=True)
+                print('=> saving images in :', save_path)
+            else:
+                print('we don\'t save any images!')
+            # csv path
             csv_file_name = file_name + '.xlsx'
             args.csv_file_name = os.path.join(csv_path, csv_file_name) 
-            print('=> saving images in :', args.save_path)
             print('=> saving csv in :', args.csv_file_name)
-
-            if os.path.exists(args.save_path):
-                shutil.rmtree(args.save_path)
-            os.makedirs(args.save_path, exist_ok=True)
-            setproctitle.setproctitle(args.save_path)
 
         else:
             print("=> no checkpoint found at '{}'".format(args.resume))
@@ -174,11 +184,13 @@ def test(args, loader, model):
                 pred *= 255
                 pred = pred.astype(np.uint8)
 
-                image = draw_results(image, label, pred)
-                imsave(os.path.join(args.save_path, file_name[0]), image)
+                #image = draw_results(image, label, pred)
+                #imsave(os.path.join(args.save_image_path, file_name[0]), image)
+                imsave(os.path.join(args.save_image_path, file_name[0]), image)
+                imsave(os.path.join(args.save_label_path, file_name[0]), label)
                 #break # debug
-            
 
+            
         # --- save statistic result ---
         df = pd.DataFrame()
         df['filename'] = filename_list
