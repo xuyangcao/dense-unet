@@ -1,5 +1,4 @@
 import os 
-os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
 import cv2
 import sys
 import tqdm
@@ -36,8 +35,9 @@ from utils.utils import save_checkpoint, confusion
 def get_args():
     print('------initing args------')
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batchsize', type=int, default=10)
-    parser.add_argument('--ngpu', type=int, default=2)
+    parser.add_argument('--batchsize', type=int, default=5)
+    parser.add_argument('--ngpu', type=int, default=1)
+    parser.add_argument('--gpu', type=str, default='3')
     parser.add_argument('--seed', default=6, type=int) 
 
     parser.add_argument('--start-epoch', default=1, type=int, metavar='N')
@@ -51,13 +51,12 @@ def get_args():
 
     parser.add_argument('--train_image_path', default='../data/selected_data/image_', type=str)
     parser.add_argument('--train_target_path', default='../data/selected_data/label_', type=str)
-    parser.add_argument('--val_image_path', default='../data/selected_data/val_image', type=str)
+    parser.add_argument('--val_image_path', default='../data/selected_data/1al_image', type=str)
     parser.add_argument('--val_target_path', default='../data/selected_data/val_label', type=str)
 
     # frequently change args
     parser.add_argument('--log_dir', default='./log/super')
     parser.add_argument('--save', default='./work/super/test')
-    parser.add_argument('--num', '-L', default='885', type=str, choices=('100', '300', '885', '1770', '4428'))
 
     args = parser.parse_args()
     return args
@@ -68,6 +67,9 @@ def main():
     # init args #
     #############
     args = get_args()
+
+    # gpu
+    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
 
     # creat save path
     if os.path.exists(args.save):
@@ -143,8 +145,8 @@ def main():
         ToTensor(), 
         Normalize(0.5, 0.5)
         ])
-    train_image_path = args.train_image_path + args.num
-    train_target_path = args.train_target_path + args.num
+    train_image_path = args.train_image_path
+    train_target_path = args.train_target_path
     train_set = ABUS_Dataset_2d(
             image_path=train_image_path, 
             target_path=train_target_path, 
