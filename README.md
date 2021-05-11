@@ -15,6 +15,13 @@ We test U-Net, Res-Unet, DenseUnet121, DenseUnet161, DenseUnet201 in this projec
 
 # usage
 
+## train
+
 ```python 
 python train.py --save ./work/super/test
+```
+## test
+
+```python 
+python test.py --resume $resume_path$
 ```
