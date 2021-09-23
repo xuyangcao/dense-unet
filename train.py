@@ -31,28 +31,34 @@ from models.unet import UNet
 from dataset.abus_dataset_2d import ABUS_Dataset_2d, ElasticTransform, ToTensor, Normalize
 from utils.loss import DiceLoss, SurfaceLoss, TILoss, MaskDiceLoss, MaskMSELoss
 from utils.utils import save_checkpoint, confusion
+from utils.lr_scheduler import LR_Scheduler
 
 def get_args():
     print('------initing args------')
     parser = argparse.ArgumentParser()
-    parser.add_argument('--batchsize', type=int, default=5)
-    parser.add_argument('--ngpu', type=int, default=1)
+
+    # general config
     parser.add_argument('--gpu', type=str, default='3')
+    parser.add_argument('--ngpu', type=int, default=1)
     parser.add_argument('--seed', default=6, type=int) 
-
-    parser.add_argument('--start-epoch', default=1, type=int, metavar='N')
     parser.add_argument('--n_epochs', type=int, default=60)
+    parser.add_argument('--start-epoch', default=1, type=int, metavar='N')
 
-    parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float, metavar='W')
-    parser.add_argument('--drop_rate', default=0.3, type=float)
+    # dataset config
+    parser.add_argument('--train_image_path', default='../semi-supervised/data/selected_data/image_100', type=str)
+    parser.add_argument('--train_target_path', default='../semi-supervised/data/selected_data/label_100', type=str)
+    parser.add_argument('--val_image_path', default='../semi-supervised/data/selected_data/val_image', type=str)
+    parser.add_argument('--val_target_path', default='../semi-supervised/data/selected_data/val_label', type=str)
+    parser.add_argument('--batchsize', type=int, default=5)
+
+    # optimizer config
+    parser.add_argument('--lr_scheduler', type=str, default='cos', choices=['poly', 'step', 'cos'])
     parser.add_argument('--lr', default=1e-4, type=float)
+    parser.add_argument('--weight-decay', '--wd', default=1e-4, type=float, metavar='W')
 
+    # network config
+    parser.add_argument('--drop_rate', default=0.3, type=float)
     parser.add_argument('--arch', default='dense161', type=str, choices=('dense161', 'dense121', 'dense201', 'unet', 'resunet'))
-
-    parser.add_argument('--train_image_path', default='../data/selected_data/image_', type=str)
-    parser.add_argument('--train_target_path', default='../data/selected_data/label_', type=str)
-    parser.add_argument('--val_image_path', default='../data/selected_data/1al_image', type=str)
-    parser.add_argument('--val_target_path', default='../data/selected_data/val_label', type=str)
 
     # frequently change args
     parser.add_argument('--log_dir', default='./log/super')
@@ -100,7 +106,6 @@ def main():
     np.random.seed(args.seed)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
-
 
     #####################
     # building  network #
@@ -170,6 +175,7 @@ def main():
     #####################
     logging.info('--- configing optimizer & losses ---')
     lr = args.lr
+    lr_scheduler = LR_Scheduler(args.lr_scheduler, args.lr, args.n_epochs, len(train_loader))
     optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=args.weight_decay)
 
     loss_fn = {}
@@ -190,19 +196,7 @@ def main():
     nTrain = len(train_set)
 
     for epoch in range(args.start_epoch, args.n_epochs + 1):
-        # learning rate
-        if epoch % 25 == 0:
-            if epoch % 50 == 0:
-                lr *= 0.2
-            else:
-                lr *= 0.5
-        for param_group in optimizer.param_groups:
-            param_group['lr'] = lr
-        writer.add_scalar('lr/epoch', lr, epoch)
-
-        train(args, epoch, model, train_loader, optimizer, loss_fn, writer)
-
-
+        train(args, epoch, model, train_loader, optimizer, loss_fn, writer, lr_scheduler)
         if epoch == 1 or epoch % 5 == 0:
             dice = val(args, epoch, model, val_loader, optimizer, loss_fn, writer)
             is_best = False
@@ -220,7 +214,7 @@ def main():
     writer.close()
 
 
-def train(args, epoch, model, train_loader, optimizer, loss_fn, writer):
+def train(args, epoch, model, train_loader, optimizer, loss_fn, writer, lr_scheduler):
     model.train()
     nProcessed = 0
     batch_size = args.ngpu * args.batchsize
@@ -242,11 +236,13 @@ def train(args, epoch, model, train_loader, optimizer, loss_fn, writer):
         loss_list.append(loss.item())
 
         # back propagation
+        lr = lr_scheduler(optimizer, batch_idx, epoch, 0)
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
 
         # show some result on tensorboard 
+        writer.add_scalar('lr', lr, epoch)
         nProcessed += len(data)
         partialEpoch = epoch + batch_idx / len(train_loader)
         print('Train Epoch: {:.2f} [{}/{} ({:.0f}%)]\tLoss: {:.8f}'.format(
