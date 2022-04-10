@@ -1,5 +1,4 @@
 import os 
-os.environ["CUDA_VISIBLE_DEVICES"] = '3' 
 import tqdm
 import shutil 
 import argparse
@@ -27,9 +26,9 @@ from utils.utils import get_metrics, draw_results
 
 def get_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--test_image_path', default='../data/selected_data/test_image', type=str)
-    parser.add_argument('--test_target_path', default='../data/selected_data/test_label', type=str)
+    parser.add_argument('--test_image_path', default='../data/selected_data/', type=str)
     parser.add_argument('--ngpu', type=int, default=1)
+    parser.add_argument('--gpu', type=str, default='0')
     parser.add_argument('--arch', default='dense161', type=str, choices=('dense161', 'dense121', 'dense201', 'unet', 'resunet')) 
 
     '''frequently changed args'''
@@ -45,6 +44,7 @@ def main():
 
     # --- init args ---
     args = get_args()
+    os.environ["CUDA_VISIBLE_DEVICES"] = '3' 
 
     # --- building network ---
     if args.arch == 'dense121': 

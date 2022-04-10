@@ -1,5 +1,5 @@
 import os 
-os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
+os.environ["CUDA_VISIBLE_DEVICES"] = '2'
 import cv2
 import sys
 import tqdm
@@ -29,6 +29,7 @@ from tensorboardX import SummaryWriter
 from models.denseunet import DenseUnet
 from models.resunet import ResUNet
 from models.unet import UNet
+from models.segmentor import EncoderDecoder 
 from dataset.abus_dataset_2d import ABUS_Dataset_2d, ElasticTransform, ToTensor, Normalize
 from utils.loss import DiceLoss, SurfaceLoss, TILoss, MaskDiceLoss, MaskMSELoss
 from utils.utils import save_checkpoint, confusion
@@ -47,7 +48,7 @@ def get_args():
     parser.add_argument('--drop_rate', default=0.3, type=float)
     parser.add_argument('--lr', default=1e-4, type=float)
 
-    parser.add_argument('--arch', default='dense161', type=str, choices=('dense161', 'dense121', 'dense201', 'unet', 'resunet'))
+    parser.add_argument('--arch', default='dense161', type=str, choices=('dense161', 'dense121', 'dense201', 'unet', 'resunet', 'setr'))
 
     parser.add_argument('--train_image_path', default='../data/selected_data/image_', type=str)
     parser.add_argument('--train_target_path', default='../data/selected_data/label_', type=str)
@@ -57,7 +58,7 @@ def get_args():
     # frequently change args
     parser.add_argument('--log_dir', default='./log/super')
     parser.add_argument('--save', default='./work/super/test')
-    parser.add_argument('--num', '-L', default='885', type=str, choices=('100', '300', '885', '1770', '4428'))
+    parser.add_argument('--num', '-L', default='8856', type=str, choices=('100', '300', '885', '1770', '4428', '8856'))
 
     args = parser.parse_args()
     return args
@@ -106,15 +107,21 @@ def main():
     logging.info('--- building network ---')
 
     if args.arch == 'dense121': 
-        model = DenseUnet(arch='121', pretrained=True, num_classes=2, drop_rate=args.drop_rate)
+        model = DenseUnet(arch='121', pretrained=False, num_classes=2, drop_rate=args.drop_rate)
     elif args.arch == 'dense161': 
-        model = DenseUnet(arch='161', pretrained=True, num_classes=2, drop_rate=args.drop_rate)
+        model = DenseUnet(arch='161', pretrained=False, num_classes=2, drop_rate=args.drop_rate)
     elif args.arch == 'dense201': 
-        model = DenseUnet(arch='201', pretrained=True, num_classes=2, drop_rate=args.drop_rate)
+        model = DenseUnet(arch='201', pretrained=False, num_classes=2, drop_rate=args.drop_rate)
     elif args.arch == 'resunet': 
         model = ResUNet(in_ch=3, num_classes=2, relu=False)
     elif args.arch == 'unet': 
         model = UNet(n_channels=3, n_classes=2)
+    elif args.arch == 'setr':
+        kwargs = {
+                'img_size': (128, 512),
+                'embed_dim': 768,
+                }
+        model = EncoderDecoder(**kwargs)
     else:
         raise(RuntimeError('error in building network!'))
     if args.ngpu > 1:
