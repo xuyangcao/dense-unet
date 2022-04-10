@@ -141,6 +141,16 @@ class ResUNet(nn.Module):
 
         self.out_tr = OutputTransition(64, num_classes, relu)
 
+        self._init_weight()
+
+    def _init_weight(self, ):
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                nn.init.kaiming_normal_(m.weight)
+            elif isinstance(m, nn.BatchNorm2d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
     def forward(self, x):
         out32 = self.input_tr(x)
         out64 = self.down_tr64(out32)

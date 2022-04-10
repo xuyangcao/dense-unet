@@ -11,3 +11,17 @@ We test U-Net, Res-Unet, DenseUnet121, DenseUnet161, DenseUnet201 in this projec
 ![Training Loss](./images/loss.png)
 
 ![Validation Dice](./images/dice.png)
+
+
+# usage
+
+## train
+
+```python 
+python train.py --save ./work/super/test
+```
+## test
+
+```python 
+python test.py --resume $resume_path$
+```
